@@ -84,4 +84,9 @@ jobs:
         name: kivy-apk
         path: bin/*.apk
 
+    - name: Force Buildozer NDK r25b
+      run: |
+        echo "ANDROID_NDK_HOME=" >> $GITHUB_ENV
+        echo "ANDROID_NDK=" >> $GITHUB_ENV
+        echo "ANDROID_NDK_ROOT=" >> $GITHUB_ENV
 
