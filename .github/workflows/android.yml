@@ -35,6 +35,11 @@ jobs:
         rm -rf .buildozer
         rm -rf $HOME/android-sdk
 
+    - name: Clean Buildozer cache
+      run: |
+        rm -rf ~/.buildozer
+        rm -rf .buildozer
+
     # 🔹 Install Android SDK properly (cmdline-tools layout)
     - name: Install Android SDK
       run: |
