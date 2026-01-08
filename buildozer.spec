@@ -8,5 +8,7 @@ requirements = python3,kivy
 orientation = portrait
 version = 1.0
 
-[buildozer]
-log_level = 2
+android.sdk_path = /home/runner/android-sdk
+android.ndk_path = /home/runner/android-sdk/ndk/25.2.9519653
+android.api = 33
+android.build_tools_version = 33.0.2
