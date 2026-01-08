@@ -1,0 +1,131 @@
+ScreenManager:
+    id: sm
+    Homescreen:
+        name: "home"
+    Memoscreen:
+        name: "memo"
+    Billscreen:
+        name: "bill"
+
+<Homescreen>
+    id: home
+    name: "home"
+    MDBoxLayout:
+        orientation: "vertical"
+
+        MDTopAppBar:
+            id: tool_bar
+            title: "Jitendra Transport Co."
+            md_bg_color: [0,0,1,1]
+            right_action_items: [["trash-can-outline", lambda x: app.del_det(x)],["cloud-upload-outline", lambda x: app.backup_database_excel()]]
+
+
+        ScrollView:
+            MDList:
+                id: list_one
+
+
+        MDBottomAppBar:
+            md_bg_color: [0,0,1,1]
+
+            MDTopAppBar:
+                use_overflow: True
+                md_bg_color: [0,0,1,1]
+                icon: "plus"
+                icon_color: [0,0,1,1]
+                elevate: 0
+                type: "bottom"
+                left_action_items: [["notebook-outline", lambda x: app.Generate_Memo()],["book-open-outline", lambda x: app.Generate_Bill()]]
+                on_action_button: app.show_confirmation_dialog()
+                mode: "end"
+
+
+
+<Content>:
+    orientation: "vertical"
+    size_hint_y: None
+    height: 500
+    padding: 20
+    spacing: 10
+
+    MDScrollView:
+        do_scroll_x: False
+
+        MDBoxLayout:
+            id: field_box
+            orientation: "vertical"
+            adaptive_height: True
+            spacing: 12
+
+            MDTextField:
+                id: Trip_details1
+                hint_text: "Truck No"
+                helper_text: "Required"
+                helper_text_mode: "on_error"
+                required: True
+
+            MDTextField:
+                id: Trip_details2
+                hint_text: "M/s"
+                helper_text: "Required"
+                helper_text_mode: "on_error"
+                required: True
+
+            MDTextField:
+                id: Trip_details3
+                hint_text: "From"
+                helper_text: "Required"
+                helper_text_mode: "on_error"
+                required: True
+
+            MDTextField:
+                id: Trip_details4
+                hint_text: "To"
+                helper_text: "Required"
+                helper_text_mode: "on_error"
+                required: True
+
+            MDTextField:
+                id: Trip_details5
+                hint_text: "Advance"
+                helper_text: "Required"
+                helper_text_mode: "on_error"
+                required: True
+                on_text: app.auto_update_freight()
+
+            MDTextField:
+                id: Trip_details6
+                hint_text: "Balance"
+                helper_text: "Required"
+                helper_text_mode: "on_error"
+                required: True
+                on_text: app.auto_update_freight()
+
+            MDTextField:
+                id: Trip_details7
+                hint_text: "Freight"
+                helper_text: "Required"
+                helper_text_mode: "on_error"
+                required: True
+                readonly: True   # So user cannot edit manually
+
+
+    MDLabel:
+        id: error_label
+        text: ""
+        theme_text_color: "Error"
+        halign: "center"
+        size_hint_y: None
+        height: self.texture_size[1]
+
+
+
+<ListItemWithCheckbox>:
+    RightCheckbox:
+        id: cb
+        IconLeftWidget:
+            icon: "truck-fast"
+
+
+
+
