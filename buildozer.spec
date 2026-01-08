@@ -12,5 +12,7 @@ version = 1.0
 
 
 android.api = 33
+android.arch = arm64-v8a
 android.build_tools_version = 33.0.2
 android.accept_sdk_license = True
+log_level = 2
