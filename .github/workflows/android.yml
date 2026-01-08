@@ -74,9 +74,21 @@ jobs:
         pip install --upgrade pip
         pip install buildozer cython
 
-    - name: Build APK
+    - name: Build APK with Buildozer
       run: |
+        unset ANDROID_NDK
+        unset ANDROID_NDK_HOME
+        unset ANDROID_NDK_ROOT
+        unset ANDROID_NDK_LATEST_HOME
+
+        export ANDROID_HOME=/home/runner/android-sdk
+        export ANDROID_SDK_ROOT=/home/runner/android-sdk
+        export ANDROID_NDK_HOME=$HOME/.buildozer/android/platform/android-ndk-r25b
+        export ANDROID_NDK_ROOT=$ANDROID_NDK_HOME
+        export ANDROID_NDK=$ANDROID_NDK_HOME
+
         buildozer android debug
+
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
