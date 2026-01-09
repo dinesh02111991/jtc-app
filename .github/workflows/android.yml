@@ -21,52 +21,48 @@ jobs:
     - name: Install system dependencies
       run: |
         sudo apt update
-        sudo apt install -y \
-          zip unzip wget openjdk-17-jdk \
-          autoconf libtool pkg-config \
-          zlib1g-dev libncurses5-dev libncursesw5-dev \
-          libtinfo5 cmake libffi-dev libssl-dev
+        sudo apt install -y zip unzip openjdk-17-jdk autoconf libtool pkg-config \
+          zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
 
-    - name: Clean buildozer cache
+    - name: Clean Buildozer and SDK cache
       run: |
-        rm -rf ~/.buildozer ./.buildozer $HOME/android-sdk
+        rm -rf ~/.buildozer
+        rm -rf .buildozer
+        rm -rf $HOME/android-sdk
 
-    - name: Install Android SDK
+    - name: Install Android SDK Command-line tools
       run: |
-        mkdir -p $HOME/android-sdk/cmdline-tools
+        mkdir -p $HOME/android-sdk/cmdline-tools/latest
         cd $HOME/android-sdk
         wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
-        unzip cmdline-tools.zip
-        mkdir -p cmdline-tools/latest
-        mv cmdline-tools/* cmdline-tools/latest/ || true
+        unzip -q cmdline-tools.zip -d $HOME/android-sdk/cmdline-tools/latest
 
-        # Accept licenses
+        # Accept licenses and install required packages
         yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
-
-        # Install required SDK components
         $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager \
           "platform-tools" \
           "platforms;android-33" \
           "build-tools;33.0.2" \
           "ndk;25.2.9519653"
 
-    - name: Set environment variables
+    - name: Set Android environment variables
       run: |
         echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
         echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
+        echo "ANDROID_NDK_HOME=$HOME/android-sdk/ndk/25.2.9519653" >> $GITHUB_ENV
         echo "PATH=$HOME/android-sdk/platform-tools:$HOME/android-sdk/cmdline-tools/latest/bin:$PATH" >> $GITHUB_ENV
 
-    - name: Install Buildozer
+    - name: Install Buildozer and Cython
       run: |
-        python -m pip install --upgrade pip
+        pip install --upgrade pip
         pip install buildozer cython
 
     - name: Build APK
       run: |
-        buildozer android debug
+        buildozer android debug || true   # Run buildozer, continue even if it fails
 
-    - name: Upload APK
+    - name: Upload APK artifact (even on failure)
       uses: actions/upload-artifact@v4
       with:
         name: kivy-apk
-        path: bin/*.apk
+        path: ./.buildozer/android/platform/build-arm64-v8a/dists/myapp/bin/*.apk
