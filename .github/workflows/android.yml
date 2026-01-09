@@ -68,10 +68,12 @@ jobs:
       run: |
         mkdir -p ~/.buildozer/android/platform
         cp -r $HOME/android-sdk ~/.buildozer/android/platform/android-sdk
-    - name: Install Buildozer
+    - name: Install Buildozer and pinned dependencies
       run: |
-        pip install --upgrade pip
-        pip install buildozer cython
+        pip install --upgrade pip buildozer
+        # CRITICAL FIX: Pinning Cython version to 0.29.33 resolves the 
+        # "undeclared name not builtin: long" error in pyjnius/kivy-deps.
+        pip install cython==0.29.33
     - name: Build APK
       run: |
         buildozer android debug
