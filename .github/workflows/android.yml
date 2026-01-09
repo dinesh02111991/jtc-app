@@ -2,14 +2,16 @@ name: Build Android APK
 
 on:
   push:
-    branches: [ master ]
+    branches:
+      - master
 
 jobs:
   build:
     runs-on: ubuntu-22.04
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -20,28 +22,31 @@ jobs:
       run: |
         sudo apt update
         sudo apt install -y \
-          zip unzip wget openjdk-17-jdk \
+          openjdk-17-jdk \
+          zip unzip \
           autoconf libtool pkg-config \
           zlib1g-dev libncurses5-dev libncursesw5-dev \
           libtinfo5 cmake libffi-dev libssl-dev
 
-    - name: Clean all previous SDKs
+    # 🔥 CRITICAL: remove GitHub's Android SDK/NDK
+    - name: Remove preinstalled Android SDK
+      run: |
+        sudo rm -rf /usr/local/lib/android/sdk || true
+
+    - name: Clean Buildozer
       run: |
         rm -rf ~/.buildozer
         rm -rf .buildozer
         rm -rf $HOME/android-sdk
-        rm -rf /tmp/android-sdk
 
-    - name: Install Android SDK
+    - name: Install Android SDK (correct layout)
       run: |
-        mkdir -p /tmp/android-sdk
-        cd /tmp/android-sdk
-
-        wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O tools.zip
-        unzip -q tools.zip
-
         mkdir -p $HOME/android-sdk/cmdline-tools
-        mv cmdline-tools $HOME/android-sdk/cmdline-tools/latest
+        cd $HOME/android-sdk
+
+        wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O tools.zip
+        unzip tools.zip
+        mv cmdline-tools cmdline-tools/latest
 
         yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
 
@@ -51,18 +56,21 @@ jobs:
           "build-tools;33.0.2" \
           "ndk;25.2.9519653"
 
-    - name: Fix legacy sdkmanager path for Buildozer
+    # 🔧 Legacy compatibility for Buildozer
+    - name: Fix legacy sdkmanager path
       run: |
         mkdir -p $HOME/android-sdk/tools/bin
         ln -sf $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager \
                $HOME/android-sdk/tools/bin/sdkmanager
 
-    - name: Export Android environment
+    # 🔥 FORCE correct SDK/NDK (THIS IS THE KEY)
+    - name: Force Android environment
       run: |
         echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
         echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
-        echo "ANDROIDSDK=$HOME/android-sdk" >> $GITHUB_ENV
-        echo "ANDROIDNDK=$HOME/android-sdk/ndk/25.2.9519653" >> $GITHUB_ENV
+        echo "ANDROID_NDK_HOME=$HOME/android-sdk/ndk/25.2.9519653" >> $GITHUB_ENV
+        echo "ANDROID_NDK_ROOT=$HOME/android-sdk/ndk/25.2.9519653" >> $GITHUB_ENV
+        echo "ANDROID_NDK=$HOME/android-sdk/ndk/25.2.9519653" >> $GITHUB_ENV
         echo "PATH=$HOME/android-sdk/platform-tools:$HOME/android-sdk/cmdline-tools/latest/bin:$PATH" >> $GITHUB_ENV
 
     - name: Install Buildozer
