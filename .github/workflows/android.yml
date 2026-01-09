@@ -23,7 +23,7 @@ jobs:
             -v $PWD:/home/user/hostcwd \
             -w /home/user/hostcwd \
             kivy/buildozer:latest \
-            buildozer android debug
+            android debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
