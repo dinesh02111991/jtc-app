@@ -13,13 +13,15 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Build APK with Buildozer (non-root)
+      - name: Build APK with Buildozer
         run: |
+          docker pull kivy/buildozer:2024.02.16
           docker run --rm \
-            -u 1000:1000 \
-            -v $PWD:/home/user/app \
-            kivy/buildozer \
+            -v $PWD:/home/user/hostcwd \
+            -w /home/user/hostcwd \
+            kivy/buildozer:2024.02.16 \
             buildozer android debug
+
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
