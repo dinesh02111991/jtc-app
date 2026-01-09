@@ -16,10 +16,7 @@ android.arch = arm64-v8a
 android.ndk = 25b
 android.build_tools_version = 33.0.2
 
-# ✅ Correct bootstrap key
 p4a.bootstrap = sdl2
-
-# ✅ Force external SDK usage
 android.skip_update = True
 
 log_level = 2

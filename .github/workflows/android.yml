@@ -34,6 +34,12 @@ jobs:
         rm -rf .buildozer
         rm -rf $HOME/android-sdk
 
+    - name: Fix missing build-tools for Buildozer
+      run: |
+        mkdir -p ~/.buildozer/android/platform/android-sdk
+        cp -r $HOME/android-sdk/build-tools ~/.buildozer/android/platform/android-sdk/
+
+
     - name: Install Android SDK + NDK r25b
       run: |
         mkdir -p $HOME/android-sdk/cmdline-tools
