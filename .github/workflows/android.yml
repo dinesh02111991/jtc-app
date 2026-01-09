@@ -22,59 +22,49 @@ jobs:
       run: |
         sudo apt update
         sudo apt install -y \
-          zip unzip \
-          openjdk-17-jdk \
+          zip unzip wget openjdk-17-jdk \
           autoconf libtool pkg-config \
           zlib1g-dev libncurses5-dev libncursesw5-dev \
           libtinfo5 cmake libffi-dev libssl-dev
 
-    # 🔹 Clean old Buildozer and Android SDK cache
-    - name: Clean Buildozer and Android SDK cache
+    - name: Clean buildozer cache
       run: |
-        rm -rf ~/.buildozer
-        rm -rf .buildozer
-        rm -rf $HOME/android-sdk
+        rm -rf ~/.buildozer ./.buildozer $HOME/android-sdk
 
-    # 🔹 Install Android SDK + NDK + Build-tools
     - name: Install Android SDK
       run: |
         mkdir -p $HOME/android-sdk/cmdline-tools
         cd $HOME/android-sdk
+        wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
+        unzip cmdline-tools.zip
+        mkdir -p cmdline-tools/latest
+        mv cmdline-tools/* cmdline-tools/latest/ || true
 
-        wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O tools.zip
-        unzip -o tools.zip -d cmdline-tools/latest
-
-        # Accept licenses and install packages
+        # Accept licenses
         yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
+
+        # Install required SDK components
         $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager \
           "platform-tools" \
           "platforms;android-33" \
           "build-tools;33.0.2" \
           "ndk;25.2.9519653"
 
-    # 🔹 Set environment variables so Buildozer can find SDK/NDK
     - name: Set environment variables
       run: |
-        echo "ANDROIDSDK=$HOME/android-sdk" >> $GITHUB_ENV
         echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
         echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
-        echo "ANDROID_NDK_HOME=$HOME/android-sdk/ndk/25.2.9519653" >> $GITHUB_ENV
-        echo "ANDROID_NDK=$HOME/android-sdk/ndk/25.2.9519653" >> $GITHUB_ENV
-        echo "ANDROID_NDK_ROOT=$HOME/android-sdk/ndk/25.2.9519653" >> $GITHUB_ENV
         echo "PATH=$HOME/android-sdk/platform-tools:$HOME/android-sdk/cmdline-tools/latest/bin:$PATH" >> $GITHUB_ENV
 
-    # 🔹 Install Buildozer & Cython
     - name: Install Buildozer
       run: |
         python -m pip install --upgrade pip
         pip install buildozer cython
 
-    # 🔹 Build the APK
     - name: Build APK
       run: |
         buildozer android debug
 
-    # 🔹 Upload APK artifact
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
