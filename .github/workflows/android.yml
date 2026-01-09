@@ -25,7 +25,8 @@ jobs:
 
       # 3. Upload APK artifact for download
       - name: Upload APK
-        uses: actions/upload-artifact@v3
-        with:
-          name: myapp-apk
-          path: bin/*.apk
+        - uses: actions/upload-artifact@v4
+          with:
+            name: myapp-apk
+            path: bin/*.apk
+
