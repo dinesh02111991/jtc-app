@@ -38,15 +38,19 @@ jobs:
     # ✅ Install Android SDK (correct layout)
     - name: Install Android SDK
       run: |
-        mkdir -p $HOME/android-sdk/cmdline-tools
+        mkdir -p $HOME/android-sdk
         cd $HOME/android-sdk
 
         wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O tools.zip
         unzip -q tools.zip
         rm tools.zip
 
+        # The zip extracts to "cmdline-tools/"
+        # Rename it properly to cmdline-tools/latest
+        mkdir -p cmdline-tools
+        mv cmdline-tools cmdline-tools-temp
         mkdir -p cmdline-tools/latest
-        mv cmdline-tools/* cmdline-tools/latest/
+        mv cmdline-tools-temp/* cmdline-tools/latest/
 
         # Legacy path for Buildozer
         mkdir -p tools/bin
@@ -59,6 +63,7 @@ jobs:
           "platforms;android-33" \
           "build-tools;33.0.2" \
           "ndk;25.2.9519653"
+
 
     # ✅ Export Android environment
     - name: Set Android environment variables
