@@ -31,16 +31,17 @@ jobs:
         rm -rf ~/.buildozer
         rm -rf .buildozer
         rm -rf $HOME/android-sdk
+        rm -rf /tmp/android-sdk
 
-    - name: Install Android SDK (CORRECT layout)
+    - name: Install Android SDK (SAFE & CORRECT)
       run: |
-        mkdir -p $HOME/android-sdk/cmdline-tools
-        cd $HOME/android-sdk
+        mkdir -p /tmp/android-sdk
+        cd /tmp/android-sdk
 
         wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O tools.zip
         unzip -q tools.zip
 
-        # 🔑 THIS IS THE CRITICAL FIX
+        mkdir -p $HOME/android-sdk/cmdline-tools
         mv cmdline-tools $HOME/android-sdk/cmdline-tools/latest
 
         yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
