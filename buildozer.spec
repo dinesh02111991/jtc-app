@@ -1,21 +1,41 @@
 [app]
-# (App basics)
+# (str) Title of your application
 title = MyApp
+
+# (str) Package name
 package.name = myapp
+
+# (str) Package domain (reverse domain style)
 package.domain = org.example
+
+# (str) Source code where the main.py is located
 source.dir = .
+
+# (list) File extensions to include
 source.include_exts = py,kv,png,jpg
-version = 1.0
-orientation = portrait
+
+# (list) Requirements
 requirements = python3,kivy
 
-# Android specific
+# (str) Orientation
+orientation = portrait
+
+# (str) Version of your app
+version = 1.0
+
+# (str) SDL2 bootstrap (required for Android builds)
 p4a.bootstrap = sdl2
+
+# (int) Android API settings
 android.api = 33
 android.minapi = 21
-android.arch = arm64-v8a
-android.build_tools_version = 33.0.2
+android.ndk = 25b
+
+# (str) Build tools version
+android.build_tools_version = 36.1.0
+
+# (bool) Skip SDK/NDK update (important for Docker image)
 android.skip_update = True
 
-# Logging
+# (int) Log level (0 to 2)
 log_level = 2

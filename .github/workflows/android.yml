@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout repository
@@ -17,17 +17,18 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: 3.10
+          python-version: 3.10  # Compatible with Ubuntu 22.04/24.04
 
-      - name: Pull Buildozer Docker image
-        run: docker pull kivy/buildozer:2024.01.01
+      - name: Set up Docker Buildozer
+        run: |
+          docker pull kivy/buildozer:2024.02.16
 
-      - name: Run Buildozer inside Docker
+      - name: Build APK with Buildozer
         run: |
           docker run --rm \
-            -v "${{ github.workspace }}:/home/user/hosted_work" \
-            -w /home/user/hosted_work \
-            kivy/buildozer:2024.01.01 \
+            -v ${{ github.workspace }}:/home/user/hosted_app \
+            -w /home/user/hosted_app \
+            kivy/buildozer:2024.02.16 \
             buildozer android debug
 
       - name: Upload APK artifact
