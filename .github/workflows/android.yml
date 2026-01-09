@@ -24,29 +24,49 @@ jobs:
             openjdk-11-jdk \
             zip unzip \
             libncurses5 libstdc++6 libffi-dev libssl-dev \
-            autoconf automake libtool pkg-config zlib1g-dev
-
-      - name: Remove GitHub preinstalled Android SDK
-        run: |
-          rm -rf /home/runner/android-sdk || true
-          echo "ANDROID_HOME=" >> $GITHUB_ENV
-          echo "ANDROID_SDK_ROOT=" >> $GITHUB_ENV
+            autoconf automake libtool pkg-config zlib1g-dev wget
 
       - name: Install Buildozer
         run: |
           python -m pip install --upgrade pip
           pip install buildozer cython==0.29.36
 
-      - name: Install Android SDK and Build-tools for Buildozer
+      - name: Install Android SDK & Build-tools
         run: |
-          # Let Buildozer download SDK/NDK
-          buildozer android sdk
-          
-          # Install required build-tools explicitly
-          ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2" "platforms;android-33" "platform-tools"
+          mkdir -p $HOME/android-sdk/cmdline-tools
+          cd $HOME/android-sdk
+
+          # Download Command-line tools
+          wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
+          unzip -q cmdline-tools.zip -d cmdline-tools
+          mkdir -p cmdline-tools/latest
+          mv cmdline-tools/cmdline-tools/* cmdline-tools/latest/
+
+          # Add sdkmanager to PATH
+          export PATH=$HOME/android-sdk/cmdline-tools/latest/bin:$PATH
+
+          # Accept licenses
+          yes | sdkmanager --licenses
+
+          # Install required packages
+          sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2" "ndk;25.2.9519653"
+
+      - name: Set environment variables
+        run: |
+          echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
+          echo "PATH=$HOME/android-sdk/platform-tools:$HOME/android-sdk/cmdline-tools/latest/bin:$PATH" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$HOME/android-sdk/ndk/25.2.9519653" >> $GITHUB_ENV
+          echo "ANDROID_NDK=$HOME/android-sdk/ndk/25.2.9519653" >> $GITHUB_ENV
+          echo "ANDROID_NDK_ROOT=$HOME/android-sdk/ndk/25.2.9519653" >> $GITHUB_ENV
+          echo "JAVA_HOME=/usr/lib/jvm/temurin-11-jdk-amd64" >> $GITHUB_ENV
 
       - name: Build APK
-        env:
-          JAVA_HOME: /usr/lib/jvm/temurin-11-jdk-amd64
         run: |
           buildozer -v android debug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: kivy-apk
+          path: bin/*.apk
