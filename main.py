@@ -1,6 +1,12 @@
 # main.py (cleaned & consolidated)
 import sqlite3
+# FIX: Prevent Permission Denied error on some Android versions
+import os
+os.environ['KIVY_NO_ENV_CONFIG'] = '1'
 
+# The rest of your imports go here, e.g.:
+from kivymd.app import MDApp
+# ... etc.
 from kivy.metrics import dp
 from kivy.properties import StringProperty
 from kivymd.app import MDApp
