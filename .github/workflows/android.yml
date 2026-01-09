@@ -10,7 +10,8 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -27,27 +28,29 @@ jobs:
           zlib1g-dev libncurses5-dev libncursesw5-dev \
           libtinfo5 cmake libffi-dev libssl-dev
 
-    # 🔥 HARD RESET
-    - name: Clean everything
+    # 🔥 CLEAN EVERYTHING (CRITICAL)
+    - name: Clean previous Android & Buildozer caches
       run: |
         rm -rf ~/.buildozer
         rm -rf .buildozer
         rm -rf $HOME/android-sdk
 
-    - name: Install Android SDK + NDK r25b
+    # ✅ Install Android SDK (correct layout)
+    - name: Install Android SDK
       run: |
         mkdir -p $HOME/android-sdk/cmdline-tools
         cd $HOME/android-sdk
 
         wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O tools.zip
         unzip -q tools.zip
+        rm tools.zip
 
         mkdir -p cmdline-tools/latest
-        mv cmdline-tools/* cmdline-tools/latest/ || true
+        mv cmdline-tools/* cmdline-tools/latest/
 
+        # Legacy path for Buildozer
         mkdir -p tools/bin
-        ln -sf $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager \
-               $HOME/android-sdk/tools/bin/sdkmanager
+        ln -sf $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager $HOME/android-sdk/tools/bin/sdkmanager
 
         yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
 
@@ -57,16 +60,19 @@ jobs:
           "build-tools;33.0.2" \
           "ndk;25.2.9519653"
 
-    # 🚨 KILL GITHUB NDK + FORCE r25b
-    - name: Force correct Android environment
+    # ✅ Export Android environment
+    - name: Set Android environment variables
       run: |
         echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
         echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
         echo "ANDROID_NDK_HOME=$HOME/android-sdk/ndk/25.2.9519653" >> $GITHUB_ENV
-        echo "ANDROID_NDK=$HOME/android-sdk/ndk/25.2.9519653" >> $GITHUB_ENV
-        echo "ANDROID_NDK_ROOT=$HOME/android-sdk/ndk/25.2.9519653" >> $GITHUB_ENV
-        echo "ANDROID_NDK_LATEST_HOME=" >> $GITHUB_ENV
         echo "PATH=$HOME/android-sdk/platform-tools:$HOME/android-sdk/cmdline-tools/latest/bin:$PATH" >> $GITHUB_ENV
+
+    # 🔑 FIX: Copy SDK into Buildozer’s expected path (THIS FIXES AIDL)
+    - name: Sync SDK into Buildozer directory
+      run: |
+        mkdir -p ~/.buildozer/android/platform
+        cp -r $HOME/android-sdk ~/.buildozer/android/platform/android-sdk
 
     - name: Install Buildozer
       run: |
