@@ -4,35 +4,79 @@ on:
   push:
     branches:
       - master
-  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.10  # Compatible with Ubuntu 22.04/24.04
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.10"
 
-      - name: Set up Docker Buildozer
-        run: |
-          docker pull kivy/buildozer:2024.02.16
-
-      - name: Build APK with Buildozer
-        run: |
-          docker run --rm \
-            -v ${{ github.workspace }}:/home/user/hosted_app \
-            -w /home/user/hosted_app \
-            kivy/buildozer:2024.02.16 \
-            buildozer android debug
-
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: myapp-apk
-          path: bin/*.apk
+    - name: Install system dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y \
+          zip unzip wget \
+          openjdk-17-jdk \
+          autoconf libtool pkg-config \
+          zlib1g-dev libncurses5-dev libncursesw5-dev \
+          libtinfo5 cmake libffi-dev libssl-dev
+    # 🔥 CLEAN EVERYTHING (CRITICAL)
+    - name: Clean previous Android & Buildozer caches
+      run: |
+        rm -rf ~/.buildozer
+        rm -rf .buildozer
+        rm -rf $HOME/android-sdk
+    # ✅ Install Android SDK (correct layout)
+    - name: Install Android SDK
+      run: |
+        mkdir -p $HOME/android-sdk
+        cd $HOME/android-sdk
+        wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O tools.zip
+        unzip -q tools.zip
+        rm tools.zip
+        # The zip extracts to "cmdline-tools/"
+        # Rename it properly to cmdline-tools/latest
+        mkdir -p cmdline-tools
+        mv cmdline-tools cmdline-tools-temp
+        mkdir -p cmdline-tools/latest
+        mv cmdline-tools-temp/* cmdline-tools/latest/
+        # Legacy path for Buildozer
+        mkdir -p tools/bin
+        ln -sf $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager $HOME/android-sdk/tools/bin/sdkmanager
+        yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
+        $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager \
+          "platform-tools" \
+          "platforms;android-33" \
+          "build-tools;33.0.2" \
+          "ndk;25.2.9519653"
+    # ✅ Export Android environment
+    - name: Set Android environment variables
+      run: |
+        echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+        echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
+        echo "ANDROID_NDK_HOME=$HOME/android-sdk/ndk/25.2.9519653" >> $GITHUB_ENV
+        echo "PATH=$HOME/android-sdk/platform-tools:$HOME/android-sdk/cmdline-tools/latest/bin:$PATH" >> $GITHUB_ENV
+    # 🔑 FIX: Copy SDK into Buildozer’s expected path (THIS FIXES AIDL)
+    - name: Sync SDK into Buildozer directory
+      run: |
+        mkdir -p ~/.buildozer/android/platform
+        cp -r $HOME/android-sdk ~/.buildozer/android/platform/android-sdk
+    - name: Install Buildozer
+      run: |
+        pip install --upgrade pip
+        pip install buildozer cython
+    - name: Build APK
+      run: |
+        buildozer android debug
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: kivy-apk
+        path: bin/*.apk
