@@ -39,17 +39,18 @@ jobs:
         rm -rf .buildozer
         rm -rf $HOME/android-sdk
 
-    - name: Install Android SDK (CORRECT layout)
+    - name: Install Android SDK (safe layout)
       run: |
         mkdir -p $HOME/android-sdk
         cd $HOME/android-sdk
 
         wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O tools.zip
-        unzip tools.zip
+        unzip -o tools.zip
 
-        mkdir -p cmdline-tools/latest
-        mv cmdline-tools/* cmdline-tools/latest/
-        rmdir cmdline-tools
+        if [ ! -d "cmdline-tools/latest" ]; then
+          mkdir -p cmdline-tools/latest
+          mv cmdline-tools/* cmdline-tools/latest/ || true
+        fi
 
         yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
 
@@ -58,6 +59,7 @@ jobs:
           "platforms;android-33" \
           "build-tools;33.0.2" \
           "ndk;25.2.9519653"
+
 
     # 🔧 Legacy compatibility for Buildozer
     - name: Fix legacy sdkmanager path
