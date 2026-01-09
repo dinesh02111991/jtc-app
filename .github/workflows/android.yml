@@ -2,8 +2,7 @@ name: Build Android APK
 
 on:
   push:
-    branches:
-      - master
+    branches: [ master ]
 
 jobs:
   build:
@@ -26,14 +25,14 @@ jobs:
           zlib1g-dev libncurses5-dev libncursesw5-dev \
           libtinfo5 cmake libffi-dev libssl-dev
 
-    - name: Clean old caches
+    - name: Clean all previous SDKs
       run: |
         rm -rf ~/.buildozer
         rm -rf .buildozer
         rm -rf $HOME/android-sdk
         rm -rf /tmp/android-sdk
 
-    - name: Install Android SDK (SAFE & CORRECT)
+    - name: Install Android SDK
       run: |
         mkdir -p /tmp/android-sdk
         cd /tmp/android-sdk
@@ -52,10 +51,12 @@ jobs:
           "build-tools;33.0.2" \
           "ndk;25.2.9519653"
 
-    - name: Set environment variables
+    - name: Export Android environment
       run: |
         echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
         echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
+        echo "ANDROIDSDK=$HOME/android-sdk" >> $GITHUB_ENV
+        echo "ANDROIDNDK=$HOME/android-sdk/ndk/25.2.9519653" >> $GITHUB_ENV
         echo "PATH=$HOME/android-sdk/platform-tools:$HOME/android-sdk/cmdline-tools/latest/bin:$PATH" >> $GITHUB_ENV
 
     - name: Install Buildozer
