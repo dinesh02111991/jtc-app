@@ -16,6 +16,7 @@ jobs:
       - name: Build APK using Buildozer (Docker)
         run: |
           docker run --rm \
+            -e BUILDOZER_WARN_ON_ROOT=0 \
             -v $PWD:/home/user/app \
             kivy/buildozer \
             buildozer android debug
