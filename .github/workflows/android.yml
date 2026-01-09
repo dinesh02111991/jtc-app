@@ -27,13 +27,13 @@ jobs:
           autoconf libtool pkg-config \
           zlib1g-dev libncurses5-dev libncursesw5-dev \
           libtinfo5 cmake libffi-dev libssl-dev
-    # 🔥 CLEAN EVERYTHING (CRITICAL)
+
     - name: Clean previous Android & Buildozer caches
       run: |
         rm -rf ~/.buildozer
         rm -rf .buildozer
         rm -rf $HOME/android-sdk
-    # ✅ Install Android SDK (correct layout)
+
     - name: Install Android SDK
       run: |
         mkdir -p $HOME/android-sdk
@@ -41,13 +41,10 @@ jobs:
         wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O tools.zip
         unzip -q tools.zip
         rm tools.zip
-        # The zip extracts to "cmdline-tools/"
-        # Rename it properly to cmdline-tools/latest
         mkdir -p cmdline-tools
         mv cmdline-tools cmdline-tools-temp
         mkdir -p cmdline-tools/latest
         mv cmdline-tools-temp/* cmdline-tools/latest/
-        # Legacy path for Buildozer
         mkdir -p tools/bin
         ln -sf $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager $HOME/android-sdk/tools/bin/sdkmanager
         yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
@@ -56,27 +53,38 @@ jobs:
           "platforms;android-33" \
           "build-tools;33.0.2" \
           "ndk;25.2.9519653"
-    # ✅ Export Android environment
+
     - name: Set Android environment variables
       run: |
         echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
         echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
         echo "ANDROID_NDK_HOME=$HOME/android-sdk/ndk/25.2.9519653" >> $GITHUB_ENV
         echo "PATH=$HOME/android-sdk/platform-tools:$HOME/android-sdk/cmdline-tools/latest/bin:$PATH" >> $GITHUB_ENV
-    # 🔑 FIX: Copy SDK into Buildozer’s expected path (THIS FIXES AIDL)
+
+    # 💥 CRITICAL FIX: Set JAVA_HOME to Java 17 for Gradle
+    - name: Set Java 17 as default JDK
+      run: |
+        # Java 17 path on the GitHub runner
+        JAVA17_HOME="/usr/lib/jvm/temurin-17-jdk-amd64"
+        echo "JAVA_HOME=${JAVA17_HOME}" >> $GITHUB_ENV
+        echo "${JAVA17_HOME}/bin" >> $GITHUB_PATH
+        # Also symlink for system use if necessary
+        sudo update-alternatives --set java /usr/lib/jvm/temurin-17-jdk-amd64/bin/java
+
     - name: Sync SDK into Buildozer directory
       run: |
         mkdir -p ~/.buildozer/android/platform
         cp -r $HOME/android-sdk ~/.buildozer/android/platform/android-sdk
+
     - name: Install Buildozer and pinned dependencies
       run: |
         pip install --upgrade pip buildozer
-        # CRITICAL FIX: Pinning Cython version to 0.29.33 resolves the 
-        # "undeclared name not builtin: long" error in pyjnius/kivy-deps.
         pip install cython==0.29.33
+
     - name: Build APK
       run: |
         buildozer android debug
+
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
