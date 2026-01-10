@@ -25,31 +25,20 @@ jobs:
         rm -rf .buildozer
         rm -rf $HOME/android-sdk
 
-    # 2. CRITICAL FIX: Robustly install system dependencies including gettext
-    - name: Install system dependencies (All Build Tools)
+    # 2. Install essential system dependencies (gettext is no longer strictly needed after pandas removal)
+    - name: Install system dependencies
       run: |
         sudo apt update
         sudo apt install -y \
-          gettext \
           zip unzip wget \
           openjdk-17-jdk \
           autoconf libtool pkg-config \
           zlib1g-dev libncurses5-dev libncursesw5-dev \
           libtinfo5 cmake libffi-dev libssl-dev
 
-        # Force package configuration and ensure /usr/bin is on PATH
         sudo dpkg --configure -a
-        echo "PATH=/usr/bin:$PATH" >> $GITHUB_ENV
 
-    # 3. 💥 ULTIMATE FIX: Create a guaranteed symlink for autopoint
-    - name: Create permanent autopoint symlink
-      run: |
-        # /usr/local/bin is guaranteed to be on the PATH.
-        # This bypasses all subprocess environment inheritance issues.
-        sudo ln -sf /usr/bin/autopoint /usr/local/bin/autopoint
-        echo "Created symlink for autopoint in /usr/local/bin"
-
-    # 4. Standard Android SDK Setup
+    # 3. Standard Android SDK Setup
     - name: Install Android SDK
       run: |
         mkdir -p $HOME/android-sdk
@@ -70,7 +59,7 @@ jobs:
           "build-tools;33.0.2" \
           "ndk;25.2.9519653"
 
-    # 5. Set Environment Variables
+    # 4. Set Environment Variables
     - name: Set Android environment variables
       run: |
         echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
@@ -78,7 +67,7 @@ jobs:
         echo "ANDROID_NDK_HOME=$HOME/android-sdk/ndk/25.2.9519653" >> $GITHUB_ENV
         echo "PATH=$HOME/android-sdk/platform-tools:$HOME/android-sdk/cmdline-tools/latest/bin:$PATH" >> $GITHUB_ENV
 
-    # 6. Set Java 17 for Gradle
+    # 5. Set Java 17 for Gradle
     - name: Set Java 17 as default JDK
       run: |
         JAVA17_HOME="/usr/lib/jvm/temurin-17-jdk-amd64"
@@ -86,19 +75,19 @@ jobs:
         echo "${JAVA17_HOME}/bin" >> $GITHUB_PATH
         sudo update-alternatives --set java /usr/lib/jvm/temurin-17-jdk-amd64/bin/java
 
-    # 7. Sync SDK into Buildozer directory
+    # 6. Sync SDK into Buildozer directory
     - name: Sync SDK into Buildozer directory
       run: |
         mkdir -p ~/.buildozer/android/platform
         cp -r $HOME/android-sdk ~/.buildozer/android/platform/android-sdk
 
-    # 8. Install Buildozer and pinned dependencies
+    # 7. Install Buildozer and pinned dependencies
     - name: Install Buildozer and pinned dependencies
       run: |
         pip install --upgrade pip buildozer
         pip install cython==0.29.33
 
-    # 9. Build APK (Final Attempt with symlink fix)
+    # 8. Build APK (Should proceed past liblzma if pandas is removed)
     - name: Build APK (Final Attempt)
       run: buildozer android debug
 
