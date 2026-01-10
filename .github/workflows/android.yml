@@ -91,23 +91,33 @@ jobs:
         pip install --upgrade pip buildozer
         pip install cython==0.29.33
 
-    # 8. CRITICAL FIX: Patch P4A recipe to hardcode the autoreconf path
-    - name: Patch python-for-android build recipe
+# 8. CRITICAL FIX: Build, Patch on failure, and Re-build (Combined Step)
+    - name: Build APK (Self-Contained Patch)
       run: |
-        # Locate the liblzma recipe file inside the buildozer cache
-        LIBLZMA_RECIPE_FILE=$(find ~/.buildozer/android/platform/python-for-android -name "__init__.py" | grep "liblzma")
+        # 1. Start the buildozer process. It will fail on the first recipe (liblzma/autopoint).
+        # This first attempt ensures the p4a directory structure is created.
+        if buildozer android debug; then
+            echo "Build successful on first attempt."
+            exit 0
+        fi
+
+        echo "Build failed as expected. Applying recipe patch..."
+
+        # 2. Locate the liblzma recipe file inside the buildozer cache
+        # The directory should now exist after the first build attempt.
+        LIBLZMA_RECIPE_DIR=$(find ~/.buildozer/android/platform/python-for-android -name "liblzma" -type d)
         
-        # Replace the call to 'sh.Command('autoreconf')' with 'sh.Command('/usr/bin/autoreconf')'
-        # This bypasses the PATH inheritance issue in the sh.py subprocess.
+        if [ -z "$LIBLZMA_RECIPE_DIR" ]; then
+            echo "Error: Could not locate liblzma recipe directory after first attempt."
+            exit 1
+        fi
+
+        LIBLZMA_RECIPE_FILE="$LIBLZMA_RECIPE_DIR/__init__.py"
+
+        # 3. Apply the patch: Replace the call to sh.Command('autoreconf') with the absolute path.
         sed -i 's/sh.Command(\'autoreconf\')/sh.Command(\'\/usr\/bin\/autoreconf\')/g' "$LIBLZMA_RECIPE_FILE"
-        echo "Patched liblzma recipe at $LIBLZMA_RECIPE_FILE"
+        echo "Successfully patched liblzma recipe: $LIBLZMA_RECIPE_FILE"
 
-    # 9. Build APK (Final Attempt with environment fully set and patched)
-    - name: Build APK (Final Attempt)
-      run: buildozer android debug
-
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: kivy-apk
-        path: bin/*.apk
+        # 4. Run buildozer again. It should now proceed past the liblzma step.
+        echo "Restarting final build..."
+        buildozer android debug
