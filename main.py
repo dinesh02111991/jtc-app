@@ -22,6 +22,7 @@ from kivymd.uix.button import MDFlatButton
 from kivymd.uix.selectioncontrol import MDCheckbox
 from kivymd.uix.list import IRightBodyTouch, ThreeLineAvatarIconListItem
 from kivymd.uix.behaviors import TouchBehavior
+
 from kivymd.toast import toast
 from kivy.utils import platform  # Essential for platform-specific code
 
@@ -36,6 +37,7 @@ from kivy.uix.widget import Widget
 from kivy.graphics import Color, RoundedRectangle
 from kivy.uix.textinput import TextInput  # Explicitly importing TextInput
 from datetime import date
+
 
 # --- Configuration ---
 # Prevent Permission Denied error on some Android versions

@@ -15,9 +15,9 @@ ScreenManager:
 
         MDTopAppBar:
             id: tool_bar
-            title: "Jitendra Transport Co."
+            title: "JTC"
             md_bg_color: [0,0,1,1]
-            right_action_items: [["trash-can-outline", lambda x: app.del_det(x)],["cloud-upload-outline", lambda x: app.backup_database_excel()]]
+            right_action_items: [["plus",lambda x: app.show_confirmation_dialog()],["notebook-outline", lambda x: app.Generate_Memo()],["book-open-outline", lambda x: app.Generate_Bill()],["trash-can-outline", lambda x: app.del_det(x)],["cloud-upload-outline", lambda x: app.backup_database_excel()]]
 
 
         ScrollView:
@@ -27,17 +27,6 @@ ScreenManager:
 
         MDBottomAppBar:
             md_bg_color: [0,0,1,1]
-
-            MDTopAppBar:
-                use_overflow: True
-                md_bg_color: [0,0,1,1]
-                icon: "plus"
-                icon_color: [0,0,1,1]
-                elevate: 0
-                type: "bottom"
-                left_action_items: [["notebook-outline", lambda x: app.Generate_Memo()],["book-open-outline", lambda x: app.Generate_Bill()]]
-                on_action_button: app.show_confirmation_dialog()
-                mode: "end"
 
 
 
