@@ -37,7 +37,7 @@ jobs:
           zlib1g-dev libncurses5-dev libncursesw5-dev \
           libtinfo5 cmake libffi-dev libssl-dev
 
-        # Force package configuration and explicitly set /usr/bin globally
+        # Ensure PATH is correct for the user shell
         sudo dpkg --configure -a
         echo "PATH=/usr/bin:$PATH" >> $GITHUB_ENV
 
@@ -90,7 +90,7 @@ jobs:
         pip install --upgrade pip buildozer
         pip install cython==0.29.33
 
-# 8. CRITICAL FIX: Clone, Patch, and Install P4A from source
+    # 8. CRITICAL FIX: Clone, Patch, and Install P4A from source (Injecting PATH into 'env')
     - name: Clone, Patch, and Install P4A from Source
       run: |
         # Clone the python-for-android repository
@@ -100,10 +100,12 @@ jobs:
         # 1. Locate the liblzma recipe file
         LIBLZMA_RECIPE_FILE="pythonforandroid/recipes/liblzma/__init__.py"
         
-        # 2. Apply the patch to hardcode the path to autoreconf.
-        # This uses double quotes and robust escaping to avoid shell syntax errors.
-        sed -i "s/sh.Command('autoreconf')/sh.Command('\/usr\/bin\/autoreconf')/g" "$LIBLZMA_RECIPE_FILE"
-        echo "Successfully patched liblzma recipe in local P4A source."
+        # 2. Apply the surgical patch: Inject the full /usr/bin path into the 'env' dictionary
+        # This modification is placed just before the failing 'shprint' call (line 24).
+        # We look for 'shprint(sh.Command('autoreconf'),' and insert the PATH fix before it.
+        # This is the most targeted fix for the _env isolation problem.
+        sed -i "/shprint(sh.Command('autoreconf'),/i \        env['PATH'] = '/usr/bin:' + env['PATH']" "$LIBLZMA_RECIPE_FILE"
+        echo "Surgically patched liblzma recipe to inject PATH into the subprocess environment."
 
         # 3. Install the patched version of P4A in development mode
         pip install -e .
