@@ -18,7 +18,7 @@ jobs:
       with:
         python-version: "3.10"
 
-    # 1. CRITICAL: Clean all Buildozer/P4A caches to prevent build recipe reuse
+    # 1. CRITICAL: Clean all Buildozer/P4A caches
     - name: Clean previous Android & Buildozer caches
       run: |
         rm -rf ~/.buildozer
@@ -30,7 +30,7 @@ jobs:
       run: |
         sudo apt update
         sudo apt install -y \
-          gettext \
+          git gettext \
           zip unzip wget \
           openjdk-17-jdk \
           autoconf libtool pkg-config \
@@ -41,7 +41,7 @@ jobs:
         sudo dpkg --configure -a
         echo "PATH=/usr/bin:$PATH" >> $GITHUB_ENV
 
-    # 3. Standard Android SDK Setup
+    # 3. Standard Android SDK Setup (Kept for completeness)
     - name: Install Android SDK
       run: |
         mkdir -p $HOME/android-sdk
@@ -68,7 +68,6 @@ jobs:
         echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
         echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
         echo "ANDROID_NDK_HOME=$HOME/android-sdk/ndk/25.2.9519653" >> $GITHUB_ENV
-        # We already added /usr/bin, adding SDK tools to PATH
         echo "PATH=$HOME/android-sdk/platform-tools:$HOME/android-sdk/cmdline-tools/latest/bin:$PATH" >> $GITHUB_ENV
 
     # 5. Set Java 17 for Gradle
@@ -91,33 +90,30 @@ jobs:
         pip install --upgrade pip buildozer
         pip install cython==0.29.33
 
-# 8. CRITICAL FIX: Build, Patch on failure, and Re-build (Combined Step)
-    - name: Build APK (Self-Contained Patch)
+    # 8. CRITICAL FIX: Clone, Patch, and Install P4A from source
+    - name: Clone, Patch, and Install P4A from Source
       run: |
-        # 1. Start the buildozer process. It will fail on the first recipe (liblzma/autopoint).
-        # This first attempt ensures the p4a directory structure is created.
-        if buildozer android debug; then
-            echo "Build successful on first attempt."
-            exit 0
-        fi
+        # Clone the python-for-android repository
+        git clone https://github.com/kivy/python-for-android.git
+        cd python-for-android
 
-        echo "Build failed as expected. Applying recipe patch..."
-
-        # 2. Locate the liblzma recipe file inside the buildozer cache
-        # The directory should now exist after the first build attempt.
-        LIBLZMA_RECIPE_DIR=$(find ~/.buildozer/android/platform/python-for-android -name "liblzma" -type d)
+        # 1. Locate the liblzma recipe file
+        LIBLZMA_RECIPE_FILE="pythonforandroid/recipes/liblzma/__init__.py"
         
-        if [ -z "$LIBLZMA_RECIPE_DIR" ]; then
-            echo "Error: Could not locate liblzma recipe directory after first attempt."
-            exit 1
-        fi
-
-        LIBLZMA_RECIPE_FILE="$LIBLZMA_RECIPE_DIR/__init__.py"
-
-        # 3. Apply the patch: Replace the call to sh.Command('autoreconf') with the absolute path.
+        # 2. Apply the patch to hardcode the path to autoreconf
+        # This bypasses the PATH inheritance failure within sh.py
         sed -i 's/sh.Command(\'autoreconf\')/sh.Command(\'\/usr\/bin\/autoreconf\')/g' "$LIBLZMA_RECIPE_FILE"
-        echo "Successfully patched liblzma recipe: $LIBLZMA_RECIPE_FILE"
+        echo "Successfully patched liblzma recipe in local P4A source."
 
-        # 4. Run buildozer again. It should now proceed past the liblzma step.
-        echo "Restarting final build..."
-        buildozer android debug
+        # 3. Install the patched version of P4A in development mode
+        pip install -e .
+
+    # 9. Build APK (Using the locally patched P4A)
+    - name: Build APK (Using Patched P4A)
+      run: buildozer android debug
+
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: kivy-apk
+        path: bin/*.apk
