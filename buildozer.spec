@@ -15,7 +15,7 @@ source.dir = .
 source.include.exts = py,kv,png,jpg
 
 # (list) Requirements - Includes pandas and xlsxwriter
-requirements = python3,kivy,sqlite3,hostpython3,setuptools,xlsxwriter
+requirements = python3,kivy,sqlite3,hostpython3,setuptools,xlsxwriter,fpdf
 
 # (str) Orientation
 orientation = portrait
