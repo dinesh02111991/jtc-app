@@ -30,18 +30,26 @@ jobs:
       run: |
         sudo apt update
         sudo apt install -y \
-          git gettext \
+          gettext \
           zip unzip wget \
           openjdk-17-jdk \
           autoconf libtool pkg-config \
           zlib1g-dev libncurses5-dev libncursesw5-dev \
           libtinfo5 cmake libffi-dev libssl-dev
 
-        # Ensure PATH is correct for the user shell
+        # Force package configuration and ensure /usr/bin is on PATH
         sudo dpkg --configure -a
         echo "PATH=/usr/bin:$PATH" >> $GITHUB_ENV
 
-    # 3. Standard Android SDK Setup (Kept for completeness)
+    # 3. 💥 ULTIMATE FIX: Create a guaranteed symlink for autopoint
+    - name: Create permanent autopoint symlink
+      run: |
+        # /usr/local/bin is guaranteed to be on the PATH.
+        # This bypasses all subprocess environment inheritance issues.
+        sudo ln -sf /usr/bin/autopoint /usr/local/bin/autopoint
+        echo "Created symlink for autopoint in /usr/local/bin"
+
+    # 4. Standard Android SDK Setup
     - name: Install Android SDK
       run: |
         mkdir -p $HOME/android-sdk
@@ -62,7 +70,7 @@ jobs:
           "build-tools;33.0.2" \
           "ndk;25.2.9519653"
 
-    # 4. Set Environment Variables
+    # 5. Set Environment Variables
     - name: Set Android environment variables
       run: |
         echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
@@ -70,7 +78,7 @@ jobs:
         echo "ANDROID_NDK_HOME=$HOME/android-sdk/ndk/25.2.9519653" >> $GITHUB_ENV
         echo "PATH=$HOME/android-sdk/platform-tools:$HOME/android-sdk/cmdline-tools/latest/bin:$PATH" >> $GITHUB_ENV
 
-    # 5. Set Java 17 for Gradle
+    # 6. Set Java 17 for Gradle
     - name: Set Java 17 as default JDK
       run: |
         JAVA17_HOME="/usr/lib/jvm/temurin-17-jdk-amd64"
@@ -78,40 +86,20 @@ jobs:
         echo "${JAVA17_HOME}/bin" >> $GITHUB_PATH
         sudo update-alternatives --set java /usr/lib/jvm/temurin-17-jdk-amd64/bin/java
 
-    # 6. Sync SDK into Buildozer directory
+    # 7. Sync SDK into Buildozer directory
     - name: Sync SDK into Buildozer directory
       run: |
         mkdir -p ~/.buildozer/android/platform
         cp -r $HOME/android-sdk ~/.buildozer/android/platform/android-sdk
 
-    # 7. Install Buildozer and pinned dependencies
+    # 8. Install Buildozer and pinned dependencies
     - name: Install Buildozer and pinned dependencies
       run: |
         pip install --upgrade pip buildozer
         pip install cython==0.29.33
 
-    # 8. CRITICAL FIX: Clone, Patch, and Install P4A from source (Injecting PATH into 'env')
-    - name: Clone, Patch, and Install P4A from Source
-      run: |
-        # Clone the python-for-android repository
-        git clone https://github.com/kivy/python-for-android.git
-        cd python-for-android
-
-        # 1. Locate the liblzma recipe file
-        LIBLZMA_RECIPE_FILE="pythonforandroid/recipes/liblzma/__init__.py"
-        
-        # 2. Apply the surgical patch: Inject the full /usr/bin path into the 'env' dictionary
-        # This modification is placed just before the failing 'shprint' call (line 24).
-        # We look for 'shprint(sh.Command('autoreconf'),' and insert the PATH fix before it.
-        # This is the most targeted fix for the _env isolation problem.
-        sed -i "/shprint(sh.Command('autoreconf'),/i \        env['PATH'] = '/usr/bin:' + env['PATH']" "$LIBLZMA_RECIPE_FILE"
-        echo "Surgically patched liblzma recipe to inject PATH into the subprocess environment."
-
-        # 3. Install the patched version of P4A in development mode
-        pip install -e .
-
-    # 9. Build APK (Using the locally patched P4A)
-    - name: Build APK (Using Patched P4A)
+    # 9. Build APK (Final Attempt with symlink fix)
+    - name: Build APK (Final Attempt)
       run: buildozer android debug
 
     - name: Upload APK
