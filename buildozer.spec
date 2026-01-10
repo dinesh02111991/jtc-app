@@ -15,7 +15,7 @@ source.dir = .
 source.include_exts = py,kv,png,jpg
 
 # (list) Requirements
-requirements = python3, kivy, sdl2, hostpython3, kivymd, fpdf
+requirements = python3,kivy,sqlite3,hostpython3,setuptools,pandas,xlsxwriter
 
 # (str) Orientation
 orientation = portrait
