@@ -88,8 +88,11 @@ jobs:
         pip install --upgrade pip buildozer
         pip install cython==0.29.33
 
-    - name: Build APK
+# 💥 CRITICAL FIX: Explicitly add /usr/bin to the PATH for P4A to find autopoint
+    - name: Build APK (Final Attempt)
       run: |
+        # Set the PATH specifically for the buildozer command
+        export PATH="/usr/bin:$PATH"
         buildozer android debug
 
     - name: Upload APK
