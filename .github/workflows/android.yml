@@ -90,7 +90,7 @@ jobs:
         pip install --upgrade pip buildozer
         pip install cython==0.29.33
 
-    # 8. CRITICAL FIX: Clone, Patch, and Install P4A from source
+# 8. CRITICAL FIX: Clone, Patch, and Install P4A from source
     - name: Clone, Patch, and Install P4A from Source
       run: |
         # Clone the python-for-android repository
@@ -100,9 +100,9 @@ jobs:
         # 1. Locate the liblzma recipe file
         LIBLZMA_RECIPE_FILE="pythonforandroid/recipes/liblzma/__init__.py"
         
-        # 2. Apply the patch to hardcode the path to autoreconf
-        # This bypasses the PATH inheritance failure within sh.py
-        sed -i 's/sh.Command(\'autoreconf\')/sh.Command(\'\/usr\/bin\/autoreconf\')/g' "$LIBLZMA_RECIPE_FILE"
+        # 2. Apply the patch to hardcode the path to autoreconf.
+        # This uses double quotes and robust escaping to avoid shell syntax errors.
+        sed -i "s/sh.Command('autoreconf')/sh.Command('\/usr\/bin\/autoreconf')/g" "$LIBLZMA_RECIPE_FILE"
         echo "Successfully patched liblzma recipe in local P4A source."
 
         # 3. Install the patched version of P4A in development mode
