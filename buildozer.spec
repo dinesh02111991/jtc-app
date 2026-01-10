@@ -12,9 +12,9 @@ package.domain = org.example
 source.dir = .
 
 # (list) File extensions to include
-source.include_exts = py,kv,png,jpg
+source.include.exts = py,kv,png,jpg
 
-# (list) Requirements
+# (list) Requirements - Includes pandas and xlsxwriter
 requirements = python3,kivy,sqlite3,hostpython3,setuptools,pandas,xlsxwriter
 
 # (str) Orientation
@@ -26,13 +26,17 @@ version = 1.0
 # (str) SDL2 bootstrap (required for Android builds)
 p4a.bootstrap = sdl2
 
+# 🟢 CRITICAL FIX: Add storage permissions for public Downloads folder access
+# This is required for writing to the path returned by your get_downloads_folder()
+android.permissions = WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE
+
 # (int) Android API settings
 android.api = 33
 android.minapi = 21
 android.ndk = 25b
 
 # (str) Build tools version
-android.build_tools_version = 36.1.0
+android.build_tools_version = 33.0.2
 
 # (bool) Skip SDK/NDK update (important for Docker image)
 android.skip_update = True

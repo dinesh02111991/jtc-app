@@ -22,13 +22,23 @@ jobs:
       run: |
         sudo apt update
         # 🟢 FIX: Added 'gettext' to provide the missing 'autopoint' command.
+        # Ensure all installation steps are run sequentially
         sudo apt install -y \
           zip unzip wget \
           openjdk-17-jdk \
           autoconf libtool pkg-config \
           zlib1g-dev libncurses5-dev libncursesw5-dev \
           libtinfo5 cmake libffi-dev libssl-dev \
-          gettext # <--- ADDED THIS LINE
+          gettext
+          
+        # 🔎 DEBUG: Check if autopoint is now available in the PATH
+        which autopoint
+        if [ $? -ne 0 ]; then
+          echo "ERROR: autopoint command still not found after installation!"
+          exit 1
+        else
+          echo "SUCCESS: autopoint command is now available."
+        fi
 
     - name: Clean previous Android & Buildozer caches
       run: |
