@@ -1,12 +1,15 @@
 [app]
 # (str) Title of your application
-title = MyApp
+title = JTC
 
 # (str) Package name
-package.name = myapp
+package.name = jtc
 
 # (str) Package domain (reverse domain style)
-package.domain = org.example
+package.domain = org.jtc
+
+# (str) Icon of the application
+icon.filename = %(source.dir)s/Logo_JTC.png
 
 # (str) Source code where the main.py is located
 source.dir = .

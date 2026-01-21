@@ -19,6 +19,7 @@ from kivy.uix.screenmanager import Screen, SlideTransition
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.dialog import MDDialog
 from kivymd.uix.button import MDFlatButton
+from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.selectioncontrol import MDCheckbox
 from kivymd.uix.list import IRightBodyTouch, ThreeLineAvatarIconListItem
 from kivymd.uix.behaviors import TouchBehavior
@@ -42,8 +43,8 @@ from datetime import date
 # --- Configuration ---
 # Prevent Permission Denied error on some Android versions
 os.environ['KIVY_NO_ENV_CONFIG'] = '1'
-Window.size = (360, 600)
-
+if platform not in ('android', 'ios'):
+    Window.size = (360, 600)
 
 # ---------------------
 
@@ -85,6 +86,38 @@ class JTCApp(MDApp):
         self.screen = Builder.load_file('main.kv')
         return self.screen
 
+    def open_menu(self, button):
+            menu_items = [
+                {
+                    "viewclass": "OneLineIconListItem",
+                    "icon": "plus",
+                    "text": "Add New Trip",
+                    "on_release": lambda x=self.show_confirmation_dialog: self.menu_callback(x),
+                },
+                {
+                    "viewclass": "OneLineIconListItem",
+                    "icon": "notebook-outline",
+                    "text": "Generate Memo",
+                    "on_release": lambda x=self.Generate_Memo: self.menu_callback(x),
+                },
+                {
+                    "viewclass": "OneLineIconListItem",
+                    "icon": "book-open-outline",
+                    "text": "Generate Bill",
+                    "on_release": lambda x=self.Generate_Bill: self.menu_callback(x),
+                },
+            ]
+            self.menu = MDDropdownMenu(
+                caller=button,
+                items=menu_items,
+                width_mult=4,
+            )
+            self.menu.open()
+
+    def menu_callback(self, method_to_call):
+            self.menu.dismiss()
+            method_to_call()
+
     def on_start(self):
         # Determine the correct DB path and connect
         self.db_path = os.path.join(self.user_data_dir, self.db_name)
@@ -124,6 +157,10 @@ class JTCApp(MDApp):
         except Exception as e:
             print(f"Error during on_start/DB initialization: {e}")
             toast(f"Startup Error: {e}")
+
+
+
+
 
     # -------------------------
     # Database Initialization (New Helper)
@@ -433,83 +470,112 @@ class JTCApp(MDApp):
 
         def generate_memo_pdf(bill_no, trip_date, ms, truck_no, trip_to, trip_fra, trip_adv, trip_bal):
             try:
+                # 3/4 Width layout with Times font
                 pdf = FPDF('P', 'mm', 'Letter')
+                pdf.set_margins(30, 20, 30)
                 pdf.add_page()
 
-                # Replace 'Logo_JTC.png' with a placeholder path or ensure file exists in project root
+                # --- 1. Draw Black Border ---
+                pdf.set_draw_color(0, 0, 0)
+                pdf.set_line_width(0.5)
+                pdf.rect(25, 10, 165, 255)
+
+                # --- 2. Header & Logo ---
                 logo_path = os.path.join(os.getcwd(), 'Logo_JTC.png')
                 if os.path.exists(logo_path):
-                    pdf.image(logo_path, x=15, y=10, w=65)
+                    pdf.image(logo_path, x=30, y=20, w=50)
 
-                pdf.set_xy(85, 15)
-                pdf.set_font('helvetica', 'B', 20)
-                pdf.cell(0, 10, "JITENDRA TRANSPORT CO.", ln=True, align='L')
+                pdf.set_xy(82, 18)
+                pdf.set_font('Times', 'B', 18)
+                pdf.cell(0, 8, "JITENDRA TRANSPORT CO.", ln=True, align='L')
 
-                pdf.set_font('helvetica', '', 11)
-                pdf.set_x(85)
-                pdf.cell(0, 6, "Office: A1, 102, Pawanputra Residency,", ln=True, align='L')
-                pdf.set_x(85)
-                pdf.cell(0, 6, "Kalher, Bhiwandi, Thane (421302)", ln=True, align='L')
-                pdf.set_x(85)
-                pdf.cell(0, 6, "Ph: 9960153368 / 8208287625 / 8788215464", ln=True, align='L')
+                pdf.set_font('Times', '', 11)
+                pdf.set_x(82)
+                pdf.cell(0, 5, "Office: A1, 102, Pawanputra Residency,", ln=True, align='L')
+                pdf.set_x(82)
+                pdf.cell(0, 5, "Kalher, Bhiwandi, Thane (421302)", ln=True, align='L')
+                pdf.set_x(82)
+                pdf.cell(0, 5, "Ph: 9960153368 / 8208287625 / 8788215464", ln=True, align='L')
 
+                # Blue separator line
                 pdf.set_draw_color(0, 51, 102)
-                pdf.set_line_width(0.8)
-                pdf.line(10, 50, 205, 50)
+                pdf.set_line_width(0.6)
+                pdf.line(25, 45, 190, 45)
                 pdf.ln(15)
 
-                pdf.set_font('helvetica', '', 12)
+                # --- 3. Memo No & Date ---
+                pdf.set_font('Times', '', 12)
+                pdf.set_x(30)
                 pdf.cell(0, 10, f"Memo No: {bill_no}", ln=False, align='L')
-                pdf.cell(0, 10, f"Date: {trip_date}", ln=True, align='R')
+                pdf.set_x(30)
+                pdf.cell(155, 10, f"Date: {trip_date}", ln=True, align='R')
                 pdf.ln(5)
 
-                pdf.set_font('helvetica', '', 12)
+                # --- 4. Recipient Section ---
+                pdf.set_x(30)
                 pdf.cell(0, 8, "To,", ln=True)
+                pdf.set_x(30)
                 pdf.cell(0, 8, f"M/S: {ms}", ln=True)
-                pdf.cell(0, 8, "PAN No: BEAPS2082B", ln=True)
+                pdf.set_x(30)
+                pdf.cell(0, 8, "PAN No: CPQPS0854H", ln=True)
                 pdf.ln(5)
+                pdf.set_x(30)
                 pdf.cell(0, 8, "Dear Sir,", ln=True)
                 pdf.ln(5)
 
-                # helper to write mixed bold parts
-                def write_mixed_line(p, parts):
-                    for text, style in parts:
-                        p.set_font('helvetica', style, 12)
-                        p.write(8, text)
-                    p.ln(10)
+                # --- 5. Main Message ---
+                pdf.set_x(30)
+                pdf.set_font('Times', '', 12)
 
-                write_mixed_line(pdf, [
-                    ("We are sending Truck No. ", ''), (truck_no, 'B'),
-                    (" for ", ''), (trip_to, 'B'),
+                def write_parts(p, parts):
+                    p.set_x(30)
+                    for text, style in parts:
+                        p.set_font('Times', style, 12)
+                        p.write(8, text)
+                    p.ln(12)
+
+                write_parts(pdf, [
+                    ("We are sending Truck No. ", ''), (str(truck_no), 'B'),
+                    (" for ", ''), (str(trip_to), 'B'),
                     (" at the rate of Rs. ", ''), (str(trip_fra), 'B'),
                     (" per M.T. Guaranteed fixed M. Ton. Advance Rs. ", ''), (str(trip_adv), 'B'),
                     (", Balance Rs. ", ''), (str(trip_bal), 'B'),
                     (" at Mumbai one party delivery balance at godown.", '')
                 ])
 
+                # --- 6. Footer Sections ---
                 pdf.ln(5)
-                pdf.set_font('helvetica', '', 12)
-                pdf.multi_cell(0, 8,
+                pdf.set_x(30)
+                pdf.set_font('Times', '', 12)
+                pdf.multi_cell(155, 8,
                                "Please arrange to load the truck and check all the necessary papers before loading the goods.")
                 pdf.ln(5)
-                pdf.multi_cell(0, 8,
+                pdf.set_x(30)
+                pdf.multi_cell(155, 8,
                                "Kindly insure your goods; otherwise, we are not responsible for accidents, theft, looting, etc.")
                 pdf.ln(10)
 
+                pdf.set_x(30)
                 pdf.cell(0, 10, "Thanking you,", ln=True)
-                pdf.ln(15)
-                pdf.cell(0, 10, "Yours faithfully,", ln=True, align='R')
-                pdf.cell(0, 10, "For JITENDRA TRANSPORT CO.", ln=True, align='R')
+                pdf.ln(10)
+                pdf.set_x(30)
+                pdf.cell(155, 10, "Yours faithfully,", ln=True, align='R')
+                pdf.set_x(30)
+                pdf.cell(155, 10, "For JITENDRA TRANSPORT CO.", ln=True, align='R')
 
-                # Save memo in 'generated_memos'
+                # --- 7. Computer Generated Note ---
+                pdf.ln(15)
+                pdf.set_font('Times', 'I', 10)
+                pdf.cell(0, 10, "This is a computer-generated bill. No signature required.", ln=True, align='C')
+
+                # --- 8. Save Logic ---
                 save_dir = self.get_downloads_folder()
                 filename = os.path.join(save_dir, f"Memo_{bill_no}.pdf")
                 pdf.output(filename)
-
                 return filename
 
             except Exception as e:
-                print("Error generating memo PDF:", e)
+                print(f"Error in generate_memo_pdf: {e}")
                 return None
 
         # iterate selections and generate PDFs
@@ -675,6 +741,7 @@ class JTCApp(MDApp):
             def safe_get(key):
                 return bill[key] if key in bill.keys() and bill[key] is not None else ""
 
+            # Variables preserved from your script
             memo = safe_get("memo_number")
             truck_no = safe_get("truck_no")
             ms = safe_get("m_s")
@@ -693,111 +760,158 @@ class JTCApp(MDApp):
             additional_charge = safe_get("additional_charge")
             trip_date = safe_get("date")
 
-            # Build PDF (same layout as original)
+            # --- PDF Setup with Padding ---
             pdf = FPDF('P', 'mm', 'A4')
+            # Increased side margins to 20mm for "padding" effect inside the border
+            pdf.set_margins(20, 15, 20)
             pdf.add_page()
+
+            # 1. Full Page Border (Outer Frame)
+            pdf.set_draw_color(0, 0, 0)
+            pdf.set_line_width(0.4)
+            pdf.rect(10, 10, 190, 277)
+
+            # 2. Header & Logo (Shifted for Padding)
 
             logo_path = os.path.join(os.getcwd(), 'Logo_JTC.png')
             if os.path.exists(logo_path):
-                pdf.image(logo_path, x=15, y=10, w=65)
+                pdf.image(logo_path, x=20, y=20, w=55)
 
-            pdf.set_xy(85, 15)
-            pdf.set_font('helvetica', 'B', 20)
+            pdf.set_xy(85, 18)
+            pdf.set_font('Times', 'B', 20)
             pdf.cell(0, 10, "JITENDRA TRANSPORT CO.", ln=True, align='L')
-            pdf.set_font('helvetica', '', 11)
+            pdf.set_font('Times', '', 11)
             pdf.set_x(85)
-            pdf.cell(0, 6, "Office: A1, 102, Pawanputra Residency,", ln=True, align='L')
+            pdf.cell(0, 5, "Office: A1, 102, Pawanputra Residency,", ln=True, align='L')
             pdf.set_x(85)
-            pdf.cell(0, 6, "Kalher, Bhiwandi, Thane (421302)", ln=True, align='L')
+            pdf.cell(0, 5, "Kalher, Bhiwandi, Thane (421302)", ln=True, align='L')
             pdf.set_x(85)
-            pdf.cell(0, 6, "Ph: 9960153368 / 8208287625 / 8788215464", ln=True, align='L')
+            pdf.cell(0, 5, "Ph: 9960153368 / 8208287625", ln=True, align='L')
 
+            # Header Separator (Constrained within padding)
             pdf.set_draw_color(0, 51, 102)
-            pdf.set_line_width(0.8)
-            pdf.line(10, 50, 205, 50)
-            pdf.ln(15)
+            pdf.set_line_width(0.6)
+            pdf.line(15, 48, 195, 48)
+            pdf.ln(18)
 
-            pdf.set_font('helvetica', '', 11)
-            pdf.cell(100, 6, f"Transporter Name: {ms}", border=0)
-            pdf.cell(0, 6, f"Bill No: {memo}", align='R', ln=True)
-            pdf.cell(100, 6, f"From: {from_trip}    To: {to_trip}", border=0)
-            pdf.cell(0, 6, f"Bill Date: {bill_date}", align='R', ln=True)
-            pdf.cell(100, 6, f"Load Date: {trip_date}", border=0)
-            pdf.cell(0, 6, f"Truck No: {truck_no}", align='R', ln=True)
-            pdf.ln(15)
+            # 3. Bill Meta Details (With x=20 padding)
+            pdf.set_font('Times', '', 11)
+            pdf.set_x(20)
+            pdf.cell(100, 6, f"M/S: {ms}", border=0)
+            pdf.set_x(20)  # Reset X to use align='R' with margin-right
+            pdf.cell(170, 6, f"Bill No: {memo}", align='R', ln=True)
 
-            pdf.set_font('helvetica', 'B', 12)
-            pdf.cell(0, 8, "Consignment Details", ln=True, align='C')
-            pdf.set_font('helvetica', '', 11)
-            pdf.ln(4)
+            pdf.set_x(20)
+            pdf.cell(100, 6, f"Route: {from_trip} to {to_trip}", border=0)
+            pdf.set_x(20)
+            pdf.cell(170, 6, f"Bill Date: {bill_date}", align='R', ln=True)
 
-            col_widths = [35, 35, 45, 20, 20, 25]
+            pdf.set_x(20)
+            pdf.cell(100, 6, f"Dispatch Date: {trip_date}", border=0)
+            pdf.set_x(20)
+            pdf.cell(170, 6, f"Truck No: {truck_no}", align='R', ln=True)
+            pdf.ln(12)
+
+            # 4. Consignment Table (Centered and Padded)
+            pdf.set_font('Times', 'B', 12)
+            pdf.cell(0, 8, "CONSIGNMENT DETAILS", ln=True, align='C')
+            pdf.ln(3)
+
+            pdf.set_font('Times', 'B', 10)
+            # Adjusted widths to fit 170mm total content width (210 - 20 - 20)
+            col_widths = [30, 30, 45, 18, 18, 29]
             headers = ["Consignor", "Consignee", "Description", "Articles", "Weight", "Rate"]
-            pdf.set_fill_color(200, 220, 255)
+
+            pdf.set_fill_color(240, 240, 240)  # Subtle gray fill
+            pdf.set_x(20)
             for i, header in enumerate(headers):
                 pdf.cell(col_widths[i], 8, header, border=1, fill=True, align='C')
             pdf.ln()
 
-            pdf.cell(col_widths[0], 8, consignor, border=1, align='C')
-            pdf.cell(col_widths[1], 8, consignee, border=1, align='C')
-            pdf.cell(col_widths[2], 8, description, border=1, align='C')
+            pdf.set_font('Times', '', 10)
+            pdf.set_x(20)
+            pdf.cell(col_widths[0], 8, str(consignor), border=1, align='C')
+            pdf.cell(col_widths[1], 8, str(consignee), border=1, align='C')
+            pdf.cell(col_widths[2], 8, str(description), border=1, align='C')
             pdf.cell(col_widths[3], 8, str(no_of_articles), border=1, align='C')
             pdf.cell(col_widths[4], 8, str(weight), border=1, align='C')
             pdf.cell(col_widths[5], 8, str(fraight), border=1, align='C')
-            pdf.ln(10)
+            pdf.ln(12)
 
-            pdf.set_font('helvetica', 'B', 12)
-            pdf.cell(0, 10, "Charges Summary", ln=True, align='C')
-            pdf.set_font('helvetica', '', 11)
-            pdf.ln(3)
+            # 5. Charges Summary (Clean & Aligned)
+            pdf.set_font('Times', 'B', 12)
+            pdf.cell(0, 10, "CHARGES SUMMARY", ln=True, align='C')
+            pdf.ln(2)
 
             advance_val = self.to_float(advance)
             balance_val = self.to_float(balance)
             additional_val = self.to_float(additional_charge)
             total_val = advance_val + balance_val + additional_val
 
-            charges = [("Advance", f"{advance_val:,.2f}"), ("Balance", f"{balance_val:,.2f}")]
+            charges = [("Advance Amount", f"{advance_val:,.2f}"),
+                       ("Balance Amount", f"{balance_val:,.2f}")]
             if additional_val > 0:
                 charges.append(("Additional Charges", f"{additional_val:,.2f}"))
-            charges.append(("Total", f"{total_val:,.2f}"))
 
-            table_width = 90
-            page_width = 210
-            x_start = (page_width - table_width) / 2
-            label_width = 55
-            value_width = 35
+            # Table positioning for charges
+            x_start = 65
+            label_w = 50
+            val_w = 30
 
-            for label, value in charges[:-1]:
+            pdf.set_font('Times', '', 11)
+            for label, value in charges:
                 pdf.set_x(x_start)
-                pdf.cell(label_width, 8, label, align='L')
-                pdf.cell(8, 8, "Rs.", align='L')
-                pdf.cell(value_width - 8, 8, value, align='R')
-                pdf.ln(7)
+                pdf.cell(label_w, 7, label, align='L')
+                pdf.cell(8, 7, "Rs.", align='L')
+                pdf.cell(val_w, 7, value, align='R', ln=True)
+
+            pdf.set_line_width(0.2)
+            pdf.line(x_start, pdf.get_y() + 1, x_start + label_w + val_w + 8, pdf.get_y() + 1)
+            pdf.ln(3)
 
             pdf.set_x(x_start)
-            pdf.set_font('helvetica', 'B', 11)
-            pdf.cell(label_width, 8, "Total", align='L')
+            pdf.set_font('Times', 'B', 11)
+            pdf.cell(label_w, 8, "Total Payable", align='L')
             pdf.cell(8, 8, "Rs.", align='L')
-            pdf.cell(value_width - 8, 8, f"{total_val:,.2f}", align='R')
-            pdf.ln(15)
+            pdf.cell(val_w, 8, f"{total_val:,.2f}", align='R', ln=True)
+            pdf.ln(10)
 
+            # 6. Remarks
             if remark:
-                pdf.set_font('helvetica', 'B', 11)
-                pdf.cell(0, 6, "Remark:", ln=True)
-                pdf.set_font('helvetica', '', 11)
-                pdf.multi_cell(0, 6, remark)
-                pdf.ln(4)
+                pdf.set_x(20)
+                pdf.set_font('Times', 'B', 11)
+                pdf.cell(0, 6, "Remarks:", ln=True)
+                pdf.set_x(20)
+                pdf.set_font('Times', '', 11)
+                pdf.multi_cell(170, 6, remark)
+                pdf.ln(5)
 
-            pdf.set_font('helvetica', 'B', 12)
-            pdf.cell(0, 8, "For JITENDRA TRANSPORT CO.", ln=True, align='R')
-            pdf.ln(10)
-            pdf.set_font('helvetica', '', 11)
-            pdf.cell(0, 8, "(Authorised Signatory)", ln=True, align='R')
-            pdf.ln(10)
-            pdf.set_font('helvetica', 'I', 10)
-            pdf.set_text_color(120, 120, 120)
-            pdf.cell(0, 6, "This is a computer-generated bill. No signature required.", ln=True, align='C')
+            # 7. Signature Section
+            pdf.ln(5)
+            pdf.set_font('Times', 'B', 12)
+            pdf.set_x(20)
+            pdf.cell(170, 8, "For JITENDRA TRANSPORT CO.", ln=True, align='R')
+            pdf.ln(15)
+            pdf.set_font('Times', '', 11)
+            pdf.set_x(20)
+            pdf.cell(170, 8, "(Authorised Signatory)", ln=True, align='R')
 
+            # 8. Computer Generated Note (Fixed to stay on Page 1 inside border)
+            # Disable auto page break so it doesn't jump to page 2
+            pdf.set_auto_page_break(auto=False)
+
+            # Position the text 12mm above the bottom border line (287 - 12 = 275)
+            pdf.set_y(275)
+            pdf.set_font('Times', 'I', 9)
+            pdf.set_text_color(0, 0, 0)
+
+            # Use the full width of the border (190mm) starting from the border edge (10mm)
+            pdf.set_x(10)
+            pdf.cell(190, 6, "This is a computer-generated bill. No signature required.", ln=True, align='C')
+
+            # Re-enable auto page break for safety
+            pdf.set_auto_page_break(auto=True, margin=15)
+            # --- Save ---
             save_dir = self.get_downloads_folder()
             filename = os.path.join(save_dir, f"Bill_{memo_number}.pdf")
             pdf.output(filename)
